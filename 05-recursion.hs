@@ -1,24 +1,54 @@
 -- Raise x to the power y, using recursion
 -- For example, power 5 2 = 25
 power :: Int -> Int -> Int
-power x y = undefined
+power x 0 = 1
+power x y
+  | y < 0 = error "Only nonnegative exponents"
+power x y = x * power x (y - 1)
+
+
+power2 :: Fractional a => a -> Int -> a
+power2 x y = case compare y 0 of
+  LT -> 1 / x * power2 x (y + 1)
+  EQ -> 1
+  GT -> x * power2 x (y - 1)  -- (*) :: a -> a -> a, and hastkell will not do type coercion
+
+-- I'm a bit mad that
+-- λ> power2 5 2 * power2 5 (-2) - 1
+-- 2.220446049250313e-16
+-- what's the point of Fractional if Haskell still uses float?
+-- see :doc Fractional
 
 -- create a list of length n of the fibbonaci sequence in reverse order
 -- examples: fib 0 = [0]
--- 	     fib 1 = [1, 0]
---	     fib 10 = [55,34,21,13,8,5,3,2,1,1,0]	
+--           fib 1 = [1, 0]
+--           fib 10 = [55,34,21,13,8,5,3,2,1,1,0]
 -- try to use a where clause
-fib :: (Num a, Eq a) => a -> [a]
-fib x = undefined
+
+-- This is _really_ inefficient
+fib :: Int -> [Int]
+fib x = reverse [fibonacci n | n <- [0..x]]
+  where fibonacci 0 = 0
+        fibonacci 1 = 1
+        fibonacci n = fibonacci (n - 1) + fibonacci (n - 2)
+
+fib2 :: (Num a, Eq a) => a -> [a]
+fib2 0 = [0]
+fib2 1 = [1, 0]
+fib2 x = sum (take 2 f) : f
+  where f = fib2 (x - 1)
+
 
 -- This is not recursive, but have a go anyway.
 -- Create a function which takes two parameters, a number and a step
 -- The result is the sign of the original number reversed, and the step added to the absolute value
 -- Confused? Some examples: stepReverseSign 6 2 = -8
---			    stepReverseSign -3 1 = 4
---			    stepReverseSign 1 2 = -3
+--                          stepReverseSign -3 1 = 4
+--                          stepReverseSign 1 2 = -3
+
 stepReverseSign :: (Fractional a, Ord a) => a -> a -> a
-stepReverseSign a = undefined
+stepReverseSign 0 b = error "What is the sign of 0?"
+stepReverseSign a b = signum (-a) * (abs a + b)
 
 {- Lets calculate pi.
  - The Leibniz formula for pi (http://en.wikipedia.org/wiki/Leibniz_formula_for_%CF%80)
@@ -52,8 +82,30 @@ stepReverseSign a = undefined
  -}
 
 piCalc :: (Fractional a, Integral b, Ord a) => a -> (a, b)
-piCalc a = undefined
+piCalc a = piCalc' 4 1 a 1
+
+-- Re tolerance:
+-- Exactly calculating the tolerance requires pi (which is a Floating ⊂ Fractional), i.e. we need
+-- foo :: (Fractional a) => a -> a
+-- foo y = y - pi
+-- which does not work (no way to get fractional representation of pi).
+-- So we can use the usual stopping criterion of abs(x[n] - x[n-1]) < tol, but
+-- for this to be correct we need to know that the absolute value of the error terms decrease monotonically.
+-- For the Leibniz series, this is the case (assuming it converges). Also, this overestimates the error by a factor of 2
+
+-- Re Floating ⊂ Fractional:
+--
+-- λ> pi :: Float
+-- 3.1415927
+-- λ> 1/4 :: Float
+-- 0.25
+-- λ> 1/4 :: Rational
+-- 1 % 4
+-- λ> pi :: Rational
 
 piCalc' :: (Ord a, Fractional a, Integral b) => a -> a -> a -> b -> (a, b)
-piCalc' w x y z = undefined
-
+piCalc' π' d tol z
+  | abs (πₙ - π') > tol = piCalc' πₙ dₙ tol (z + 1)
+  | otherwise          = (π', z)
+  where dₙ = stepReverseSign d 2
+        πₙ = π' + 4 / dₙ

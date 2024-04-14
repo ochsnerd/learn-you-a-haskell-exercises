@@ -12,7 +12,7 @@
  - Uncomment the following declarations to complete the implementation, and provide an implementation for instance Show Card
  -}
 
-import Data.List (group, isPrefixOf, isInfixOf)
+import Data.List (group, isPrefixOf)
 
 data Suit = Club | Diamond | Heart | Spade deriving (Eq, Show)
 data Digit = Two | Three | Four | Five | Six | Seven | Eight | Nine | Ten | Jack | Queen | King | Ace deriving (Eq, Ord, Show)
@@ -47,6 +47,5 @@ instance Hand Coin where
       longestSublist = foldr (max . length) 0
       longestHeadStreak =  longestSublist . filter startsWithHeads . group
 -- better: isInfixOf
-
 
 -- Have a play with implementing Hand for some other types, for instance Int and Bool

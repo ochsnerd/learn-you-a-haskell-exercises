@@ -1,7 +1,7 @@
 import Control.Monad
 import Data.List
 import System.Environment
-import System.Random
+-- import System.Random
 
 {-
  - Lets implement the UNIX echo command
@@ -9,21 +9,23 @@ import System.Random
  - If the first argument is -n, this argument is not printed, and no trailing newline is printed
  -}
 
-main = do
-  args <- getArgs
-  unless (null args) $ do
-    if head args == "-n"
-      then do
-        putStr $ unwords $ tail args
-      else do putStrLn $ unwords args
-
 -- main = do
---   gen <- getStdGen
---   putStr $ show $ lottery gen
+--   args <- getArgs
+--   unless (null args) $ do
+--     if head args == "-n"
+--       then do
+--         putStr $ unwords $ tail args
+--       else do putStrLn $ unwords args
+
+main = do
+  gen <- getStdGen
+  putStr $ show $ lottery gen
 
 {- Write a lottery number picker
  - This function should take a StdGen instance, and produce a list of six unique numbers between 1 and 49, in numerical order
  -}
+
+-- better: use nub
 lottery :: StdGen -> [Int]
 lottery gen = sort (take 6 (infiniteNonRepeating (1, 49) gen))
 

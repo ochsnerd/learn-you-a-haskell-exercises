@@ -1,7 +1,7 @@
 import Control.Monad
 import Data.List
 import System.Environment
--- import System.Random
+import System.Random
 
 {-
  - Lets implement the UNIX echo command
@@ -16,7 +16,6 @@ import System.Environment
 --       then do
 --         putStr $ unwords $ tail args
 --       else do putStrLn $ unwords args
-
 main = do
   gen <- getStdGen
   putStr $ show $ lottery gen

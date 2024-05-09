@@ -1,7 +1,9 @@
 import Control.Applicative
 import Data.Monoid
 
--- import Test.QuickCheck.Classes
+import Data.Proxy
+import Test.QuickCheck
+import Test.QuickCheck.Classes
 
 -- We can use the following type to simulate our own list
 data List a = Empty | Value a (List a) deriving (Show, Eq)
@@ -19,7 +21,7 @@ combineLists (Value x xs) b = Value x (combineLists xs b)
 
 -- Make our list a Monoid
 instance Semigroup (List a) where
-  (<>) = combineLists
+ (<>) = combineLists
 
 instance Monoid (List a) where
   mempty = Empty
@@ -28,10 +30,9 @@ instance Monoid (List a) where
 instance Applicative List where
   pure x = Value x Empty
   Empty <*> l = Empty
-  (Value f fs) <*> l = fmap f l <> (fs <*> l)
+  (Value f fs) <*> l = fmap f l `combineLists` (fs <*> l)
 
 -- Make sure that the List obeys the laws for Applicative and Monoid
--- also check Test.QuickCheck.Classes.applicative
 
 -- Monoid: https://hackage.haskell.org/package/base-4.19.1.0/docs/Prelude.html#t:Monoid
 -- Applicative: https://hackage.haskell.org/package/base-4.19.1.0/docs/Control-Applicative.html
@@ -50,8 +51,6 @@ test l = and ([testUnary] <*> pure l)
             associativity x y z = ((x <> y) <> z) == (x <> ( y <> z))
             -- composition u v w = ((.) <$> u <*> v <*> w) == (u <*> (v <*> w)) -- u v w need to be functions -> how to actually check equality between function? What constraing on a?
  
-composition u v w = ((.) <$> u <*> v <*> w) == (u <*> (v <*> w))
-
 -- Create some lists of numbers of different lengths such as:
 twoValueList = Value 10 $ Value 20 Empty
 
@@ -68,3 +67,34 @@ twoFunctionsList = Value (+) $ Value (*) Empty
 
 -- Use <*> on the binary functions list and the number lists
 c = twoFunctionsList <*> twoValueList <*> twoValueList
+
+-- https://begriffs.com/posts/2017-01-14-design-use-quickcheck.html
+-- myList :: Arbitrary a => Gen [a]
+-- myList = oneof
+--   [ return []
+--   , (:) <$> arbitrary <*> myList
+--   ]
+
+-- flexList :: Arbitrary a => Gen [a]
+-- flexList = sized $ \n ->
+--  frequency
+--    [ (1, return [])
+--    , (n, (:) <$> arbitrary <*> flexList)
+--    ]
+
+flexList :: Arbitrary a => Gen (List a)
+flexList = sized $ \n ->
+  frequency
+    [ (1, return Empty)
+    , (n, Value <$> arbitrary <*> flexList)
+    ]
+
+instance (Arbitrary a) => Arbitrary (List a) where
+  arbitrary = flexList
+
+main :: IO ()
+main = do
+  lawsCheck (functorLaws (Proxy :: Proxy List))
+  lawsCheck (semigroupLaws (Proxy :: Proxy (List Int)))
+  lawsCheck (monoidLaws (Proxy :: Proxy (List Int)))
+  lawsCheck (applicativeLaws (Proxy :: Proxy List))
